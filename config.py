@@ -1,12 +1,5 @@
-# =============================================
-# НАСТРОЙКИ БОТА — заполните перед запуском
-# =============================================
+import os
 
-# Токен вашего бота от @BotFather
-BOT_TOKEN = "ВАШ_ТОКЕН_ЗДЕСЬ"
-
-# Chat ID менеджера (узнать можно через @userinfobot)
-MANAGER_CHAT_ID = 123456789  # замените на реальный ID
-
-# Название магазина
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+MANAGER_CHAT_ID = int(os.environ.get("MANAGER_CHAT_ID"))
 SHOP_NAME = "Астра Сторе"
