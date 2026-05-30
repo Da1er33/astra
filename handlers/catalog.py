@@ -3,6 +3,8 @@ from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardBut
 
 router = Router()
 
+CHANNEL_URL = "https://t.me/AstraStore09/73"
+
 # =============================================
 # КАТАЛОГ ТОВАРОВ — редактируйте под свой ассортимент
 # =============================================
@@ -78,6 +80,12 @@ def catalog_keyboard(items: list, category: str) -> InlineKeyboardMarkup:
                 callback_data=f"item_{category}_{i}"
             )
         ])
+    buttons.append([
+        InlineKeyboardButton(
+            text="📢 Смотреть весь каталог в канале",
+            url=CHANNEL_URL
+        )
+    ])
     buttons.append([InlineKeyboardButton(text="◀️ Главное меню", callback_data="main_menu")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -85,6 +93,10 @@ def catalog_keyboard(items: list, category: str) -> InlineKeyboardMarkup:
 def item_detail_keyboard(category: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💬 Хочу купить — связаться", callback_data="contact_manager")],
+        [InlineKeyboardButton(
+            text="📢 Смотреть в канале",
+            url=CHANNEL_URL
+        )],
         [InlineKeyboardButton(text="◀️ Назад к каталогу", callback_data=f"catalog_{category}")],
     ])
 
@@ -93,7 +105,8 @@ def item_detail_keyboard(category: str) -> InlineKeyboardMarkup:
 async def show_catalog_new(callback: CallbackQuery):
     items = CATALOG["new"]
     await callback.message.edit_text(
-        "📱 <b>Новые устройства Apple</b>\n\nВыберите товар для подробной информации:",
+        "📱 <b>Новые устройства Apple</b>\n\n"
+        "Выберите товар для подробной информации или смотрите полный актуальный каталог в нашем канале:",
         parse_mode="HTML",
         reply_markup=catalog_keyboard(items, "new")
     )
@@ -103,7 +116,8 @@ async def show_catalog_new(callback: CallbackQuery):
 async def show_catalog_used(callback: CallbackQuery):
     items = CATALOG["used"]
     await callback.message.edit_text(
-        "♻️ <b>Устройства Apple б/у</b>\n\nВыберите товар для подробной информации:",
+        "♻️ <b>Устройства Apple б/у</b>\n\n"
+        "Выберите товар для подробной информации или смотрите полный актуальный каталог в нашем канале:",
         parse_mode="HTML",
         reply_markup=catalog_keyboard(items, "used")
     )
@@ -123,7 +137,7 @@ async def show_item(callback: CallbackQuery):
         f"💰 <b>Цена:</b> {item['price']}\n"
         f"📋 <b>Описание:</b> {item['desc']}\n"
         f"🏷 <b>Категория:</b> {cat_label}\n\n"
-        f"Заинтересовал товар? Нажмите кнопку ниже — менеджер ответит вам в ближайшее время!"
+        f"Заинтересовал товар? Нажмите кнопку ниже — менеджер ответит в ближайшее время!"
     )
 
     await callback.message.edit_text(
