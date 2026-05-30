@@ -16,7 +16,6 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 
-# Подключаем роутеры
 dp.include_router(catalog.router)
 dp.include_router(repair.router)
 dp.include_router(tradein.router)
@@ -31,6 +30,8 @@ async def cmd_start(message: Message, state: FSMContext):
         f"👋 Добро пожаловать в <b>Астра Сторе</b>!\n\n"
         f"Мы занимаемся продажей новой и б/у техники Apple, "
         f"ремонтом устройств и Trade-In.\n\n"
+        f"📍 Санкт-Петербург, 1-ая Советская, 10\n"
+        f"🕐 Пн–Вс с 12:00 до 20:00\n\n"
         f"Выберите, что вас интересует:",
         parse_mode="HTML",
         reply_markup=main_menu_keyboard()

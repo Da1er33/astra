@@ -20,10 +20,8 @@ def cancel_keyboard() -> InlineKeyboardMarkup:
 
 
 def manager_reply_keyboard(user_id: int, username: str) -> InlineKeyboardMarkup:
-    """Кнопка для менеджера — открывает чат с клиентом одним нажатием."""
     buttons = []
     if username and username != "нет username":
-        # Если есть username — кнопка-ссылка на профиль
         buttons.append([
             InlineKeyboardButton(
                 text="💬 Ответить клиенту",
@@ -31,7 +29,6 @@ def manager_reply_keyboard(user_id: int, username: str) -> InlineKeyboardMarkup:
             )
         ])
     else:
-        # Если нет username — открываем чат по ID
         buttons.append([
             InlineKeyboardButton(
                 text="💬 Написать клиенту",
@@ -47,7 +44,8 @@ async def contact_start(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(
         "💬 <b>Связь с менеджером</b>\n\n"
         "Напишите ваш вопрос или оставьте номер телефона — менеджер ответит вам в Telegram или перезвонит.\n\n"
-        "<i>Рабочие часы: Пн–Вс с 10:00 до 20:00</i>",
+        "<i>📍 Санкт-Петербург, 1-ая Советская, 10\n"
+        "🕐 Пн–Вс с 12:00 до 20:00</i>",
         parse_mode="HTML",
         reply_markup=cancel_keyboard()
     )
@@ -79,7 +77,8 @@ async def contact_send(message: Message, state: FSMContext, bot: Bot):
     await message.answer(
         "✅ <b>Сообщение отправлено!</b>\n\n"
         "Менеджер свяжется с вами в ближайшее время.\n\n"
-        "Рабочие часы: <b>Пн–Вс с 10:00 до 20:00</b> 🍎",
+        "📍 Санкт-Петербург, 1-ая Советская, 10\n"
+        "🕐 Пн–Вс с 12:00 до 20:00 🍎",
         parse_mode="HTML",
         reply_markup=back_to_menu_keyboard()
     )
