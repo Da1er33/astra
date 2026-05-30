@@ -4,7 +4,6 @@ from aiogram.types import (
 )
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-
 from config import MANAGER_CHAT_ID
 
 router = Router()
@@ -31,6 +30,25 @@ def cancel_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="❌ Отмена", callback_data="main_menu")]
     ])
+
+
+def manager_reply_keyboard(user_id: int, username: str) -> InlineKeyboardMarkup:
+    buttons = []
+    if username and username != "нет username":
+        buttons.append([
+            InlineKeyboardButton(
+                text="💬 Ответить клиенту",
+                url=f"https://t.me/{username.lstrip('@')}"
+            )
+        ])
+    else:
+        buttons.append([
+            InlineKeyboardButton(
+                text="💬 Написать клиенту",
+                url=f"tg://user?id={user_id}"
+            )
+        ])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 @router.callback_query(F.data == "repair")
@@ -61,20 +79,14 @@ async def repair_device(callback: CallbackQuery, state: FSMContext):
 async def repair_problem(message: Message, state: FSMContext):
     await state.update_data(problem=message.text)
     await state.set_state(RepairForm.name)
-    await message.answer(
-        "👤 Как вас зовут?",
-        reply_markup=cancel_keyboard()
-    )
+    await message.answer("👤 Как вас зовут?", reply_markup=cancel_keyboard())
 
 
 @router.message(RepairForm.name)
 async def repair_name(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
     await state.set_state(RepairForm.phone)
-    await message.answer(
-        "📞 Введите ваш номер телефона:",
-        reply_markup=cancel_keyboard()
-    )
+    await message.answer("📞 Введите ваш номер телефона:", reply_markup=cancel_keyboard())
 
 
 @router.message(RepairForm.phone)
@@ -85,7 +97,6 @@ async def repair_phone(message: Message, state: FSMContext, bot: Bot):
     user = message.from_user
     username = f"@{user.username}" if user.username else "нет username"
 
-    # Уведомление менеджеру
     manager_text = (
         f"🔧 <b>НОВАЯ ЗАЯВКА НА РЕМОНТ</b>\n\n"
         f"👤 Имя: {data['name']}\n"
@@ -95,9 +106,14 @@ async def repair_phone(message: Message, state: FSMContext, bot: Bot):
         f"💬 Telegram: {username}\n"
         f"🆔 User ID: {user.id}"
     )
-    await bot.send_message(MANAGER_CHAT_ID, manager_text, parse_mode="HTML")
 
-    # Ответ клиенту
+    await bot.send_message(
+        MANAGER_CHAT_ID,
+        manager_text,
+        parse_mode="HTML",
+        reply_markup=manager_reply_keyboard(user.id, username)
+    )
+
     from keyboards.main_menu import back_to_menu_keyboard
     await message.answer(
         f"✅ <b>Заявка принята!</b>\n\n"

@@ -4,7 +4,6 @@ from aiogram.types import (
 )
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-
 from config import MANAGER_CHAT_ID
 
 router = Router()
@@ -20,12 +19,35 @@ def cancel_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
+def manager_reply_keyboard(user_id: int, username: str) -> InlineKeyboardMarkup:
+    """Кнопка для менеджера — открывает чат с клиентом одним нажатием."""
+    buttons = []
+    if username and username != "нет username":
+        # Если есть username — кнопка-ссылка на профиль
+        buttons.append([
+            InlineKeyboardButton(
+                text="💬 Ответить клиенту",
+                url=f"https://t.me/{username.lstrip('@')}"
+            )
+        ])
+    else:
+        # Если нет username — открываем чат по ID
+        buttons.append([
+            InlineKeyboardButton(
+                text="💬 Написать клиенту",
+                url=f"tg://user?id={user_id}"
+            )
+        ])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
 @router.callback_query(F.data == "contact_manager")
 async def contact_start(callback: CallbackQuery, state: FSMContext):
     await state.set_state(ContactForm.question)
     await callback.message.edit_text(
         "💬 <b>Связь с менеджером</b>\n\n"
-        "Напишите ваш вопрос или оставьте номер телефона — менеджер ответит вам в Telegram или перезвонит.",
+        "Напишите ваш вопрос или оставьте номер телефона — менеджер ответит вам в Telegram или перезвонит.\n\n"
+        "<i>Рабочие часы: Пн–Вс с 10:00 до 20:00</i>",
         parse_mode="HTML",
         reply_markup=cancel_keyboard()
     )
@@ -34,12 +56,10 @@ async def contact_start(callback: CallbackQuery, state: FSMContext):
 @router.message(ContactForm.question)
 async def contact_send(message: Message, state: FSMContext, bot: Bot):
     await state.clear()
-
     user = message.from_user
     username = f"@{user.username}" if user.username else "нет username"
     full_name = user.full_name
 
-    # Уведомление менеджеру
     manager_text = (
         f"💬 <b>ВОПРОС ОТ КЛИЕНТА</b>\n\n"
         f"👤 Имя: {full_name}\n"
@@ -47,13 +67,19 @@ async def contact_send(message: Message, state: FSMContext, bot: Bot):
         f"🆔 User ID: <code>{user.id}</code>\n\n"
         f"📩 Сообщение:\n{message.text}"
     )
-    await bot.send_message(MANAGER_CHAT_ID, manager_text, parse_mode="HTML")
+
+    await bot.send_message(
+        MANAGER_CHAT_ID,
+        manager_text,
+        parse_mode="HTML",
+        reply_markup=manager_reply_keyboard(user.id, username)
+    )
 
     from keyboards.main_menu import back_to_menu_keyboard
     await message.answer(
         "✅ <b>Сообщение отправлено!</b>\n\n"
         "Менеджер свяжется с вами в ближайшее время.\n\n"
-        "Рабочие часы: <b>Пн–Вс с 10:00 до 20:00</b>",
+        "Рабочие часы: <b>Пн–Вс с 10:00 до 20:00</b> 🍎",
         parse_mode="HTML",
         reply_markup=back_to_menu_keyboard()
     )

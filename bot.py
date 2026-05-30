@@ -1,5 +1,6 @@
 import asyncio
 import logging
+
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart
 from aiogram.types import Message, CallbackQuery
@@ -7,7 +8,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import BOT_TOKEN
-from handlers import catalog, repair, tradein, manager_contact
+from handlers import catalog, repair, tradein, manager_contact, promo_faq
 from keyboards.main_menu import main_menu_keyboard
 
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +21,7 @@ dp.include_router(catalog.router)
 dp.include_router(repair.router)
 dp.include_router(tradein.router)
 dp.include_router(manager_contact.router)
+dp.include_router(promo_faq.router)
 
 
 @dp.message(CommandStart())

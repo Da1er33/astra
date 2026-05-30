@@ -8,6 +8,9 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="♻️ Каталог б/у", callback_data="catalog_used"),
         ],
         [
+            InlineKeyboardButton(text="🔥 Акции", callback_data="promo"),
+        ],
+        [
             InlineKeyboardButton(text="🔧 Записаться на ремонт", callback_data="repair"),
         ],
         [
@@ -15,6 +18,9 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(text="💬 Связь с менеджером", callback_data="contact_manager"),
+        ],
+        [
+            InlineKeyboardButton(text="❓ Частые вопросы", callback_data="faq"),
         ],
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)

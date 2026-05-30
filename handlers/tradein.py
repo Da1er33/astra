@@ -4,7 +4,6 @@ from aiogram.types import (
 )
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-
 from config import MANAGER_CHAT_ID
 
 router = Router()
@@ -50,6 +49,25 @@ def cancel_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
+def manager_reply_keyboard(user_id: int, username: str) -> InlineKeyboardMarkup:
+    buttons = []
+    if username and username != "нет username":
+        buttons.append([
+            InlineKeyboardButton(
+                text="💬 Ответить клиенту",
+                url=f"https://t.me/{username.lstrip('@')}"
+            )
+        ])
+    else:
+        buttons.append([
+            InlineKeyboardButton(
+                text="💬 Написать клиенту",
+                url=f"tg://user?id={user_id}"
+            )
+        ])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
 @router.callback_query(F.data == "tradein")
 async def tradein_start(callback: CallbackQuery, state: FSMContext):
     await state.set_state(TradeInForm.device)
@@ -81,10 +99,7 @@ async def tradein_device(callback: CallbackQuery, state: FSMContext):
 async def tradein_model(message: Message, state: FSMContext):
     await state.update_data(model=message.text)
     await state.set_state(TradeInForm.condition)
-    await message.answer(
-        "🔍 Оцените состояние устройства:",
-        reply_markup=conditions_keyboard()
-    )
+    await message.answer("🔍 Оцените состояние устройства:", reply_markup=conditions_keyboard())
 
 
 @router.callback_query(F.data.startswith("ti_cond_"), TradeInForm.condition)
@@ -115,7 +130,6 @@ async def tradein_phone(message: Message, state: FSMContext, bot: Bot):
     user = message.from_user
     username = f"@{user.username}" if user.username else "нет username"
 
-    # Уведомление менеджеру
     manager_text = (
         f"🔄 <b>НОВАЯ ЗАЯВКА TRADE-IN</b>\n\n"
         f"👤 Имя: {data['name']}\n"
@@ -126,7 +140,13 @@ async def tradein_phone(message: Message, state: FSMContext, bot: Bot):
         f"💬 Telegram: {username}\n"
         f"🆔 User ID: {user.id}"
     )
-    await bot.send_message(MANAGER_CHAT_ID, manager_text, parse_mode="HTML")
+
+    await bot.send_message(
+        MANAGER_CHAT_ID,
+        manager_text,
+        parse_mode="HTML",
+        reply_markup=manager_reply_keyboard(user.id, username)
+    )
 
     from keyboards.main_menu import back_to_menu_keyboard
     await message.answer(
