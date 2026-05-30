@@ -10,19 +10,37 @@ router = Router()
 
 
 class RepairForm(StatesGroup):
+    brand = State()
     device = State()
+    model = State()
     problem = State()
     name = State()
     phone = State()
 
 
-DEVICES = ["iPhone", "iPad", "MacBook", "Apple Watch", "AirPods", "iMac / Mac mini", "Другое"]
+APPLE_DEVICES = ["iPhone", "iPad", "MacBook", "Apple Watch"]
+BRANDS = ["Apple", "Samsung", "Xiaomi", "Другой бренд"]
+OTHER_DEVICES = ["Смартфон", "Ноутбук"]
 
 
-def devices_keyboard() -> InlineKeyboardMarkup:
-    buttons = [[InlineKeyboardButton(text=d, callback_data=f"repair_device_{i}")]
-               for i, d in enumerate(DEVICES)]
+def brands_keyboard() -> InlineKeyboardMarkup:
+    buttons = [[InlineKeyboardButton(text=b, callback_data=f"repair_brand_{i}")]
+               for i, b in enumerate(BRANDS)]
     buttons.append([InlineKeyboardButton(text="◀️ Главное меню", callback_data="main_menu")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def apple_devices_keyboard() -> InlineKeyboardMarkup:
+    buttons = [[InlineKeyboardButton(text=d, callback_data=f"repair_device_{i}")]
+               for i, d in enumerate(APPLE_DEVICES)]
+    buttons.append([InlineKeyboardButton(text="❌ Отмена", callback_data="main_menu")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def other_devices_keyboard() -> InlineKeyboardMarkup:
+    buttons = [[InlineKeyboardButton(text=d, callback_data=f"repair_device_{i}")]
+               for i, d in enumerate(OTHER_DEVICES)]
+    buttons.append([InlineKeyboardButton(text="❌ Отмена", callback_data="main_menu")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
@@ -53,24 +71,64 @@ def manager_reply_keyboard(user_id: int, username: str) -> InlineKeyboardMarkup:
 
 @router.callback_query(F.data == "repair")
 async def repair_start(callback: CallbackQuery, state: FSMContext):
-    await state.set_state(RepairForm.device)
+    await state.set_state(RepairForm.brand)
     await callback.message.edit_text(
-        "🔧 <b>Запись на ремонт</b>\n\nКакое устройство нужно отремонтировать?",
+        "🔧 <b>Запись на ремонт</b>\n\nВыберите бренд устройства:",
         parse_mode="HTML",
-        reply_markup=devices_keyboard()
+        reply_markup=brands_keyboard()
     )
+
+
+@router.callback_query(F.data.startswith("repair_brand_"), RepairForm.brand)
+async def repair_brand(callback: CallbackQuery, state: FSMContext):
+    index = int(callback.data.split("_")[2])
+    brand = BRANDS[index]
+    await state.update_data(brand=brand)
+
+    if brand == "Apple":
+        await state.set_state(RepairForm.device)
+        await callback.message.edit_text(
+            f"✅ Бренд: <b>{brand}</b>\n\nКакое устройство нужно отремонтировать?",
+            parse_mode="HTML",
+            reply_markup=apple_devices_keyboard()
+        )
+    else:
+        await state.set_state(RepairForm.device)
+        await callback.message.edit_text(
+            f"✅ Бренд: <b>{brand}</b>\n\nТип устройства:",
+            parse_mode="HTML",
+            reply_markup=other_devices_keyboard()
+        )
 
 
 @router.callback_query(F.data.startswith("repair_device_"), RepairForm.device)
 async def repair_device(callback: CallbackQuery, state: FSMContext):
     index = int(callback.data.split("_")[2])
-    device = DEVICES[index]
+    data = await state.get_data()
+    brand = data.get("brand", "")
+
+    if brand == "Apple":
+        device = APPLE_DEVICES[index]
+    else:
+        device = OTHER_DEVICES[index]
+
     await state.update_data(device=device)
-    await state.set_state(RepairForm.problem)
+    await state.set_state(RepairForm.model)
     await callback.message.edit_text(
         f"✅ Устройство: <b>{device}</b>\n\n"
-        f"📝 Опишите неисправность (что сломалось, что не работает):",
+        f"📝 Укажите модель устройства:\n"
+        f"<i>Например: iPhone 14 Pro, Samsung Galaxy S23, MacBook Air M2</i>",
         parse_mode="HTML",
+        reply_markup=cancel_keyboard()
+    )
+
+
+@router.message(RepairForm.model)
+async def repair_model(message: Message, state: FSMContext):
+    await state.update_data(model=message.text)
+    await state.set_state(RepairForm.problem)
+    await message.answer(
+        "📝 Опишите неисправность (что сломалось, что не работает):",
         reply_markup=cancel_keyboard()
     )
 
@@ -101,7 +159,9 @@ async def repair_phone(message: Message, state: FSMContext, bot: Bot):
         f"🔧 <b>НОВАЯ ЗАЯВКА НА РЕМОНТ</b>\n\n"
         f"👤 Имя: {data['name']}\n"
         f"📞 Телефон: {message.text}\n"
+        f"🏷 Бренд: {data['brand']}\n"
         f"📱 Устройство: {data['device']}\n"
+        f"📋 Модель: {data['model']}\n"
         f"🛠 Проблема: {data['problem']}\n\n"
         f"💬 Telegram: {username}\n"
         f"🆔 User ID: {user.id}"
